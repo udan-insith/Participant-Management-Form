@@ -7,7 +7,7 @@
 			content="width=device-width, initial-scale=1, viewport-fit=cover"
 		/>
 		<meta name="theme-color" content="#1f5f5b" />
-		<title>Event Details</title>
+		<title>Event Details PDF Builder</title>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 		<style>
 			:root {
@@ -245,7 +245,7 @@
 					0 1px 3px rgba(20, 30, 40, 0.12),
 					0 14px 40px rgba(20, 30, 40, 0.16);
 			}
-			#sheet {
+			.sheet {
 				width: 100%;
 				height: 100%;
 				display: flex;
@@ -254,7 +254,7 @@
 				background: #fff;
 				color: #1b2430;
 			}
-			#sheet .doc-title {
+			.sheet .doc-title {
 				font-size: 30px;
 				line-height: 1.15;
 				font-weight: 700;
@@ -262,15 +262,15 @@
 				margin: 0;
 				overflow-wrap: anywhere;
 			}
-			#sheet .bar {
+			.sheet .bar {
 				height: 3px;
-				width: 64px;
+				width: 100%;
 				background: var(--accent);
 				margin: 14px 0 16px;
 				border-radius: 2px;
 				flex: none;
 			}
-			#sheet .doc-desc {
+			.sheet .doc-desc {
 				font-size: 13.5px;
 				line-height: 1.6;
 				white-space: pre-wrap;
@@ -278,7 +278,7 @@
 				margin: 0;
 				color: #2f3a48;
 			}
-			#sheet .sec {
+			.sheet .sec {
 				font-size: 13px;
 				font-weight: 700;
 				margin: 20px 0 8px;
@@ -286,17 +286,17 @@
 				border-bottom: 1px solid var(--line);
 				flex: none;
 			}
-			#sheet ol {
+			.sheet ol {
 				margin: 0;
 				padding-left: 22px;
 				font-size: 13.5px;
 				line-height: 1.75;
 			}
-			#sheet ol li::marker {
+			.sheet ol li::marker {
 				color: var(--accent);
 				font-weight: 600;
 			}
-			#sheet .gallery {
+			.sheet .gallery {
 				display: grid;
 				gap: 10px;
 				margin-top: 18px;
@@ -306,7 +306,7 @@
 				align-content: start;
 				grid-template-columns: repeat(var(--cols, 1), 1fr);
 			}
-			#sheet .gallery img {
+			.sheet .gallery img {
 				display: block;
 				width: 100%;
 				height: var(--h, 200px);
@@ -498,7 +498,7 @@
 			<main class="right">
 				<div class="stage">
 					<div class="paper" id="paper">
-						<div id="sheet">
+						<div id="sheet" class="sheet">
 							<h1 class="doc-title" id="pTitle"></h1>
 							<div class="bar"></div>
 							<p class="doc-desc" id="pDesc"></p>
