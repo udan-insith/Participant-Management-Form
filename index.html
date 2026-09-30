@@ -227,6 +227,88 @@
 				min-height: 16px;
 				margin-top: 8px;
 			}
+			/* ---------- A4 page (794 x 1123 px @96dpi) ---------- */
+			.paper {
+				width: 794px;
+				height: 1123px;
+				padding: 38px;
+				background: #fff;
+				flex: none;
+				box-shadow:
+					0 1px 3px rgba(20, 30, 40, 0.12),
+					0 14px 40px rgba(20, 30, 40, 0.16);
+			}
+			#sheet {
+				width: 100%;
+				height: 100%;
+				display: flex;
+				flex-direction: column;
+				overflow: hidden;
+				background: #fff;
+				color: #1b2430;
+			}
+			#sheet .doc-title {
+				font-size: 30px;
+				line-height: 1.15;
+				font-weight: 700;
+				letter-spacing: -0.02em;
+				margin: 0;
+				overflow-wrap: anywhere;
+			}
+			#sheet .bar {
+				height: 3px;
+				width: 64px;
+				background: var(--accent);
+				margin: 14px 0 16px;
+				border-radius: 2px;
+				flex: none;
+			}
+			#sheet .doc-desc {
+				font-size: 13.5px;
+				line-height: 1.6;
+				white-space: pre-wrap;
+				overflow-wrap: anywhere;
+				margin: 0;
+				color: #2f3a48;
+			}
+			#sheet .sec {
+				font-size: 13px;
+				font-weight: 700;
+				margin: 20px 0 8px;
+				padding-bottom: 6px;
+				border-bottom: 1px solid var(--line);
+				flex: none;
+			}
+			#sheet ol {
+				margin: 0;
+				padding-left: 22px;
+				font-size: 13.5px;
+				line-height: 1.75;
+			}
+			#sheet ol li::marker {
+				color: var(--accent);
+				font-weight: 600;
+			}
+			#sheet .gallery {
+				display: grid;
+				gap: 10px;
+				margin-top: 18px;
+				flex: 1;
+				min-height: 0;
+				overflow: hidden;
+				align-content: start;
+				grid-template-columns: repeat(var(--cols, 1), 1fr);
+			}
+			#sheet .gallery img {
+				display: block;
+				width: 100%;
+				height: var(--h, 200px);
+				object-fit: cover;
+				border-radius: 6px;
+			}
+			.ph {
+				color: #a6afbb;
+			}
 		</style>
 	</head>
 	<body></body>
