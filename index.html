@@ -309,6 +309,20 @@
 			.ph {
 				color: #a6afbb;
 			}
+			@media (max-width: 980px) {
+				.app {
+					grid-template-columns: 1fr;
+					height: auto;
+				}
+				.left {
+					border-right: 0;
+					border-bottom: 1px solid var(--line);
+					overflow: visible;
+				}
+				.right {
+					overflow: visible;
+				}
+			}
 		</style>
 	</head>
 	<body></body>
