@@ -2,8 +2,12 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Event Details</title>
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, viewport-fit=cover"
+		/>
+		<meta name="theme-color" content="#1f5f5b" />
+		<title>Event Details PDF Builder</title>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 		<style>
 			:root {
@@ -101,6 +105,7 @@
 				border-color: var(--accent);
 				box-shadow: 0 0 0 3px rgba(31, 95, 91, 0.15);
 			}
+
 			.people {
 				display: flex;
 				flex-direction: column;
@@ -174,6 +179,7 @@
 				color: var(--muted);
 				margin-left: 10px;
 			}
+
 			.thumbs {
 				display: flex;
 				flex-direction: column;
@@ -227,6 +233,7 @@
 				min-height: 16px;
 				margin-top: 8px;
 			}
+
 			/* ---------- A4 page (794 x 1123 px @96dpi) ---------- */
 			.paper {
 				width: 794px;
@@ -309,23 +316,138 @@
 			.ph {
 				color: #a6afbb;
 			}
+
+			.tabs,
+			.bottombar {
+				display: none;
+			}
 			@media (max-width: 980px) {
-				.app {
-					grid-template-columns: 1fr;
+				html,
+				body {
 					height: auto;
 				}
-				.left {
-					border-right: 0;
+				body {
+					padding-bottom: calc(86px + env(safe-area-inset-bottom));
+					-webkit-tap-highlight-color: transparent;
+				}
+				.app {
+					display: block;
+					height: auto;
+				}
+				.tabs {
+					display: flex;
+					gap: 8px;
+					position: sticky;
+					top: 0;
+					z-index: 20;
+					background: #fff;
 					border-bottom: 1px solid var(--line);
+					padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
+				}
+				.tabs button {
+					flex: 1;
+					font: inherit;
+					font-size: 15px;
+					font-weight: 600;
+					min-height: 44px;
+					border: 0;
+					border-radius: 10px;
+					background: #eef1f4;
+					color: var(--muted);
+				}
+				.tabs button[aria-selected="true"] {
+					background: var(--accent);
+					color: #fff;
+				}
+				.left,
+				.right {
+					display: none;
 					overflow: visible;
+					border: 0;
+				}
+				body[data-tab="edit"] .left {
+					display: block;
+				}
+				body[data-tab="preview"] .right {
+					display: block;
+				}
+				.left {
+					padding: 20px 16px 28px;
 				}
 				.right {
-					overflow: visible;
+					padding: 16px 12px 24px;
+				}
+				h2 {
+					font-size: 22px;
+				}
+				input[type="text"],
+				textarea {
+					font-size: 16px;
+					padding: 12px 14px;
+				}
+				.person {
+					padding: 12px;
+					font-size: 15px;
+					min-height: 50px;
+				}
+				.person input {
+					width: 22px;
+					height: 22px;
+				}
+				.btn {
+					min-height: 48px;
+				}
+				#addBtn {
+					width: 100%;
+					margin-bottom: 6px;
+				}
+				.count {
+					display: block;
+					margin: 6px 0 0;
+				}
+				.thumb img {
+					width: 64px;
+					height: 64px;
+				}
+				.thumb button {
+					min-height: 40px;
+					padding: 8px 14px;
+					font-size: 14px;
+				}
+				.desk-only {
+					display: none;
+				}
+				.bottombar {
+					display: block;
+					position: fixed;
+					left: 0;
+					right: 0;
+					bottom: 0;
+					z-index: 30;
+					background: rgba(255, 255, 255, 0.96);
+					-webkit-backdrop-filter: blur(8px);
+					backdrop-filter: blur(8px);
+					border-top: 1px solid var(--line);
+					padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+				}
+				.bottombar .btn-primary {
+					padding: 15px;
+					font-size: 16px;
+					border-radius: 12px;
 				}
 			}
 		</style>
 	</head>
-	<body>
+	<body data-tab="edit">
+		<nav class="tabs" role="tablist">
+			<button type="button" role="tab" data-tab="edit" aria-selected="true">
+				Edit
+			</button>
+			<button type="button" role="tab" data-tab="preview" aria-selected="false">
+				Preview
+			</button>
+		</nav>
+
 		<div class="app">
 			<!-- LEFT: FORM -->
 			<aside class="left">
@@ -367,7 +489,7 @@
 					<div class="thumbs" id="thumbs"></div>
 				</div>
 
-				<button type="button" class="btn btn-primary" id="pdfBtn">
+				<button type="button" class="btn btn-primary desk-only pdf-btn">
 					Print / Download PDF
 				</button>
 			</aside>
@@ -387,6 +509,12 @@
 					</div>
 				</div>
 			</main>
+		</div>
+
+		<div class="bottombar">
+			<button type="button" class="btn btn-primary pdf-btn">
+				Print / Download PDF
+			</button>
 		</div>
 
 		<script>
@@ -436,16 +564,42 @@
 				if (files.length > room)
 					noteEl.textContent = `Only ${MAX_IMAGES} images fit on one page. Extra files were skipped.`;
 				for (const f of files.slice(0, room)) {
-					const src = await new Promise((res) => {
-						const r = new FileReader();
-						r.onload = () => res(r.result);
-						r.readAsDataURL(f);
-					});
+					const src = await shrink(f);
 					images.push({ id: nextId++, name: f.name, src });
 				}
 				fileInput.value = "";
 				render();
 			});
+
+			// Downscale big phone photos so the PDF renders fast and memory stays low
+			function shrink(file) {
+				return new Promise((res) => {
+					const url = URL.createObjectURL(file),
+						im = new Image();
+					im.onload = () => {
+						const k = Math.min(
+							1,
+							1600 / Math.max(im.naturalWidth, im.naturalHeight),
+						);
+						const c = document.createElement("canvas");
+						c.width = Math.round(im.naturalWidth * k);
+						c.height = Math.round(im.naturalHeight * k);
+						const x = c.getContext("2d");
+						x.fillStyle = "#fff";
+						x.fillRect(0, 0, c.width, c.height);
+						x.drawImage(im, 0, 0, c.width, c.height);
+						URL.revokeObjectURL(url);
+						res(c.toDataURL("image/jpeg", 0.85));
+					};
+					im.onerror = () => {
+						URL.revokeObjectURL(url);
+						const r = new FileReader();
+						r.onload = () => res(r.result);
+						r.readAsDataURL(file);
+					};
+					im.src = url;
+				});
+			}
 
 			function renderThumbs() {
 				thumbsEl.innerHTML = "";
@@ -524,15 +678,32 @@
 
 			// Scale the A4 preview to fit the panel (screen only; the PDF uses an unscaled clone)
 			function fitPreview() {
-				const panel = document.querySelector(".right");
-				const avail = panel.clientWidth - 40;
+				const mobile = window.matchMedia("(max-width:980px)").matches;
+				const avail = mobile
+					? document.documentElement.clientWidth - 24
+					: document.querySelector(".right").clientWidth - 40;
 				$("paper").style.zoom = Math.min(1, avail / 794);
 			}
 			window.addEventListener("resize", fitPreview);
 
+			// Mobile tabs
+			document.querySelectorAll(".tabs button").forEach((b) =>
+				b.addEventListener("click", () => {
+					document.body.dataset.tab = b.dataset.tab;
+					document
+						.querySelectorAll(".tabs button")
+						.forEach((x) => x.setAttribute("aria-selected", x === b));
+					window.scrollTo(0, 0);
+					fitPreview();
+				}),
+			);
+
 			// PDF export: unscaled clone sized to the printable area (A4 minus 0.4in margins)
-			$("pdfBtn").addEventListener("click", () => {
-				const btn = $("pdfBtn");
+			document
+				.querySelectorAll(".pdf-btn")
+				.forEach((b) => b.addEventListener("click", makePdf));
+			function makePdf() {
+				const btns = [...document.querySelectorAll(".pdf-btn")];
 				const clone = $("sheet").cloneNode(true);
 				clone.removeAttribute("id");
 				clone.querySelectorAll(".ph").forEach((e) => e.remove());
@@ -548,16 +719,26 @@
 					margin: 0.4,
 					filename: "event-details.pdf",
 					image: { type: "jpeg", quality: 0.98 },
-					html2canvas: { scale: 2, useCORS: true },
+					html2canvas: {
+						scale: 2,
+						useCORS: true,
+						windowWidth: 1024,
+						scrollX: 0,
+						scrollY: 0,
+					},
 					jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
 				};
 
-				btn.disabled = true;
-				btn.textContent = "Creating PDF...";
+				btns.forEach((b) => {
+					b.disabled = true;
+					b.textContent = "Creating PDF...";
+				});
 				const done = () => {
 					wrap.remove();
-					btn.disabled = false;
-					btn.textContent = "Print / Download PDF";
+					btns.forEach((b) => {
+						b.disabled = false;
+						b.textContent = "Print / Download PDF";
+					});
 				};
 				html2pdf()
 					.set(options)
@@ -568,7 +749,7 @@
 						console.error(e);
 						done();
 					});
-			});
+			}
 
 			render();
 			fitPreview();
