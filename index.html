@@ -325,5 +325,253 @@
 			}
 		</style>
 	</head>
-	<body></body>
+	<body>
+		<div class="app">
+			<!-- LEFT: FORM -->
+			<aside class="left">
+				<h2>Event details</h2>
+				<p class="sub">
+					Fill in the form. The page on the right updates as you type.
+				</p>
+
+				<div class="field">
+					<label class="lbl" for="title">Title</label>
+					<input
+						type="text"
+						id="title"
+						placeholder="e.g. Project kickoff meeting"
+					/>
+				</div>
+
+				<div class="field">
+					<label class="lbl" for="desc">Description</label>
+					<textarea
+						id="desc"
+						placeholder="What happened, or what is planned?"
+					></textarea>
+				</div>
+
+				<div class="field">
+					<span class="lbl">Participants</span>
+					<div class="people" id="people"></div>
+				</div>
+
+				<div class="field">
+					<span class="lbl">Images</span>
+					<button type="button" class="btn btn-outline" id="addBtn">
+						Add image
+					</button>
+					<span class="count" id="count">0 of 9</span>
+					<input type="file" id="fileInput" accept="image/*" multiple />
+					<div class="note" id="note" role="status"></div>
+					<div class="thumbs" id="thumbs"></div>
+				</div>
+
+				<button type="button" class="btn btn-primary" id="pdfBtn">
+					Print / Download PDF
+				</button>
+			</aside>
+
+			<!-- RIGHT: LIVE A4 PREVIEW -->
+			<main class="right">
+				<div class="stage">
+					<div class="paper" id="paper">
+						<div id="sheet">
+							<h1 class="doc-title" id="pTitle"></h1>
+							<div class="bar"></div>
+							<p class="doc-desc" id="pDesc"></p>
+							<div class="sec" id="pSec">Participants</div>
+							<ol id="pList"></ol>
+							<div class="gallery" id="pGallery"></div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+
+		<script>
+			const PEOPLE = [
+				"M.D.S. Madushanka",
+				"Hasindu Wijekoon",
+				"G.P.Peter",
+				"R.B.M. Pamuditha",
+				"G.U.I. Perera",
+			];
+			const MAX_IMAGES = 9;
+			let images = []; // {id, name, src}
+			let nextId = 1;
+
+			const $ = (id) => document.getElementById(id);
+			const titleEl = $("title"),
+				descEl = $("desc"),
+				peopleEl = $("people"),
+				fileInput = $("fileInput"),
+				addBtn = $("addBtn"),
+				thumbsEl = $("thumbs"),
+				countEl = $("count"),
+				noteEl = $("note");
+
+			// Participants checklist (all ticked by default)
+			PEOPLE.forEach((name, i) => {
+				const row = document.createElement("label");
+				row.className = "person";
+				row.innerHTML =
+					'<input type="checkbox" checked data-name=""><span></span>';
+				row.querySelector("input").dataset.name = name;
+				row.querySelector("span").textContent = name;
+				row.querySelector("input").addEventListener("change", render);
+				peopleEl.appendChild(row);
+			});
+
+			titleEl.addEventListener("input", render);
+			descEl.addEventListener("input", render);
+			addBtn.addEventListener("click", () => fileInput.click());
+
+			fileInput.addEventListener("change", async () => {
+				noteEl.textContent = "";
+				const files = [...fileInput.files].filter((f) =>
+					f.type.startsWith("image/"),
+				);
+				const room = MAX_IMAGES - images.length;
+				if (files.length > room)
+					noteEl.textContent = `Only ${MAX_IMAGES} images fit on one page. Extra files were skipped.`;
+				for (const f of files.slice(0, room)) {
+					const src = await new Promise((res) => {
+						const r = new FileReader();
+						r.onload = () => res(r.result);
+						r.readAsDataURL(f);
+					});
+					images.push({ id: nextId++, name: f.name, src });
+				}
+				fileInput.value = "";
+				render();
+			});
+
+			function renderThumbs() {
+				thumbsEl.innerHTML = "";
+				images.forEach((img) => {
+					const d = document.createElement("div");
+					d.className = "thumb";
+					const im = document.createElement("img");
+					im.src = img.src;
+					im.alt = "";
+					const nm = document.createElement("span");
+					nm.className = "nm";
+					nm.textContent = img.name;
+					const b = document.createElement("button");
+					b.type = "button";
+					b.textContent = "Remove";
+					b.addEventListener("click", () => {
+						images = images.filter((x) => x.id !== img.id);
+						noteEl.textContent = "";
+						render();
+					});
+					d.append(im, nm, b);
+					thumbsEl.appendChild(d);
+				});
+				countEl.textContent = `${images.length} of ${MAX_IMAGES}`;
+				addBtn.disabled = images.length >= MAX_IMAGES;
+			}
+
+			// Image layout by count: [columns, image height in px]
+			function layoutFor(n) {
+				if (n <= 1) return [1, 400];
+				if (n === 2) return [2, 300];
+				if (n === 3) return [3, 230];
+				if (n === 4) return [2, 220];
+				if (n <= 6) return [3, 150];
+				return [3, 120];
+			}
+
+			function render() {
+				const t = titleEl.value.trim(),
+					d = descEl.value.trim();
+				const pT = $("pTitle"),
+					pD = $("pDesc");
+				pT.textContent = t || "Your title appears here";
+				pT.classList.toggle("ph", !t);
+				pD.textContent = d || "Your description appears here.";
+				pD.classList.toggle("ph", !d);
+
+				const chosen = [...peopleEl.querySelectorAll("input:checked")].map(
+					(i) => i.dataset.name,
+				);
+				const list = $("pList");
+				list.innerHTML = "";
+				chosen.forEach((n) => {
+					const li = document.createElement("li");
+					li.textContent = n;
+					list.appendChild(li);
+				});
+				$("pSec").style.display = chosen.length ? "" : "none";
+				list.style.display = chosen.length ? "" : "none";
+
+				const g = $("pGallery");
+				g.innerHTML = "";
+				const [cols, h] = layoutFor(images.length);
+				g.style.setProperty("--cols", cols);
+				g.style.setProperty("--h", h + "px");
+				images.forEach((i) => {
+					const im = document.createElement("img");
+					im.src = i.src;
+					im.alt = "";
+					g.appendChild(im);
+				});
+				g.style.display = images.length ? "" : "none";
+
+				renderThumbs();
+			}
+
+			// Scale the A4 preview to fit the panel (screen only; the PDF uses an unscaled clone)
+			function fitPreview() {
+				const panel = document.querySelector(".right");
+				const avail = panel.clientWidth - 40;
+				$("paper").style.zoom = Math.min(1, avail / 794);
+			}
+			window.addEventListener("resize", fitPreview);
+
+			// PDF export: unscaled clone sized to the printable area (A4 minus 0.4in margins)
+			$("pdfBtn").addEventListener("click", () => {
+				const btn = $("pdfBtn");
+				const clone = $("sheet").cloneNode(true);
+				clone.removeAttribute("id");
+				clone.querySelectorAll(".ph").forEach((e) => e.remove());
+				clone.style.cssText =
+					"width:717px;height:1040px;overflow:hidden;background:#fff;display:flex;flex-direction:column;";
+
+				const wrap = document.createElement("div");
+				wrap.style.cssText = "position:fixed;left:-10000px;top:0;";
+				wrap.appendChild(clone);
+				document.body.appendChild(wrap);
+
+				const options = {
+					margin: 0.4,
+					filename: "event-details.pdf",
+					image: { type: "jpeg", quality: 0.98 },
+					html2canvas: { scale: 2, useCORS: true },
+					jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
+				};
+
+				btn.disabled = true;
+				btn.textContent = "Creating PDF...";
+				const done = () => {
+					wrap.remove();
+					btn.disabled = false;
+					btn.textContent = "Print / Download PDF";
+				};
+				html2pdf()
+					.set(options)
+					.from(clone)
+					.save()
+					.then(done)
+					.catch((e) => {
+						console.error(e);
+						done();
+					});
+			});
+
+			render();
+			fitPreview();
+		</script>
+	</body>
 </html>
