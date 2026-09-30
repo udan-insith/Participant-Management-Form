@@ -710,22 +710,16 @@
 				clone.style.cssText =
 					"width:717px;height:1040px;overflow:hidden;background:#fff;display:flex;flex-direction:column;";
 
-				const wrap = document.createElement("div");
-				wrap.style.cssText = "position:fixed;left:-10000px;top:0;";
-				wrap.appendChild(clone);
-				document.body.appendChild(wrap);
+				// On phones, briefly widen the layout viewport so html2canvas doesn't clip the A4 sheet
+				const vp = document.querySelector("meta[name=viewport]"),
+					vpOld = vp.content;
+				if (window.innerWidth < 900) vp.content = "width=900";
 
 				const options = {
 					margin: 0.4,
 					filename: "event-details.pdf",
 					image: { type: "jpeg", quality: 0.98 },
-					html2canvas: {
-						scale: 2,
-						useCORS: true,
-						windowWidth: 1024,
-						scrollX: 0,
-						scrollY: 0,
-					},
+					html2canvas: { scale: 2, useCORS: true },
 					jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
 				};
 
@@ -734,21 +728,23 @@
 					b.textContent = "Creating PDF...";
 				});
 				const done = () => {
-					wrap.remove();
+					vp.content = vpOld;
 					btns.forEach((b) => {
 						b.disabled = false;
 						b.textContent = "Print / Download PDF";
 					});
 				};
-				html2pdf()
-					.set(options)
-					.from(clone)
-					.save()
-					.then(done)
-					.catch((e) => {
-						console.error(e);
-						done();
-					});
+				setTimeout(() => {
+					html2pdf()
+						.set(options)
+						.from(clone)
+						.save()
+						.then(done)
+						.catch((e) => {
+							console.error(e);
+							done();
+						});
+				}, 200);
 			}
 
 			render();
